@@ -47,6 +47,10 @@
 
 #include <QtCore/qmath.h>
 
+#include <iostream>
+
+using namespace std;
+
 //! [1]
 class TriangleWindow : public OpenGLWindow
 {
@@ -87,7 +91,7 @@ int main(int argc, char **argv)
     window.resize(640, 480);
     window.show();
 
-    window.setAnimating(true);
+    window.setAnimating(false);
 
     return app.exec();
 }
@@ -145,12 +149,48 @@ void TriangleWindow::render()
 
     QMatrix4x4 matrix;
     matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 100.0f);
-    matrix.translate(0, 0, -2);
+    matrix.translate(0, 0, -7);
     matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
 
     m_program->setUniformValue(m_matrixUniform, matrix);
 
-    GLfloat vertices[] = {
+    // TERRAIN ///////////////////////////
+    /*GLfloat vertices[] = {
+            -0.5f, 0.0f,
+            -0.5f, -0.5f,
+            0.5f, -0.5f
+    };*/
+    GLfloat** vertices = new GLfloat*[16];
+
+    float posX = -3.5f;
+    float posY = 4.f;
+
+    for(int nb = 0 ; nb < 16 ; nb++){
+        int index = 0;
+
+        vertices[nb] = new GLfloat[16*2*2];
+        for(int i = 0 ; i < 16 ; i++){
+            for(int j = 0 ; j < 2 ; j++){
+                vertices[nb][index++] = posX + 0.5f * i;
+                vertices[nb][index++] = posY - 0.5f * j;
+            }
+        }
+
+        glVertexAttribPointer(m_posAttr, 2, GL_FLOAT, GL_FALSE, 0, vertices[nb]);
+
+        glEnableVertexAttribArray(0);
+
+        glDrawArrays(GL_LINE_STRIP, 0, 16*2);
+
+        glDisableVertexAttribArray(0);
+
+        posY -= 0.5f;
+    }
+
+
+    //** //////////////////////////////////
+
+    /*GLfloat vertices[] = {
         0.0f, 0.707f,
         -0.5f, -0.5f,
         0.5f, -0.5f
@@ -171,7 +211,7 @@ void TriangleWindow::render()
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(0);*/
 
     m_program->release();
 
