@@ -40,6 +40,7 @@
 
 #include "openglwindow.h"
 
+#include <iostream>
 #include <QtCore/QCoreApplication>
 
 #include <QtGui/QOpenGLContext>
@@ -97,12 +98,16 @@ void OpenGLWindow::renderLater()
 
 bool OpenGLWindow::event(QEvent *event)
 {
+  // TODO ICI ON GERE LES EVENEMENTS
     switch (event->type()) {
     case QEvent::UpdateRequest:
         m_update_pending = false;
+
         renderNow();
         return true;
     default:
+    std::cout << event->type() << std::endl;
+
         return QWindow::event(event);
     }
 }
@@ -157,4 +162,3 @@ void OpenGLWindow::setAnimating(bool animating)
         renderLater();
 }
 //! [5]
-
