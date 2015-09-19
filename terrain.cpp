@@ -22,8 +22,12 @@ static const char *fragmentShaderSource =
 Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0)
 {
     openImage(heightmap);
-
     createTerrain();
+}
+
+Terrain::~Terrain(){
+    delete hauteur;
+    delete vertices;
 }
 
 GLuint Terrain::loadShader(GLenum type, const char *source)
@@ -48,11 +52,14 @@ void Terrain::initialize()
 void Terrain::openImage(QString str){
     heightmap.load(str);
 
-    hauteur = new int[heightmap.width() * heightmap.height()];
+    terrain_width = heightmap.width();
+    terrain_height = heightmap.height();
+
+    hauteur = new int[terrain_width * terrain_height];
 
     int index = 0;
-    for(int i = 0  ; i < heightmap.height() ; i++){
-        for(int j = 0 ; j < heightmap.width() ; j++){
+    for(int i = 0  ; i < terrain_height ; i++){
+        for(int j = 0 ; j < terrain_width ; j++){
             QRgb pixel = heightmap.pixel(i,j);
             hauteur[index++] = qRed(pixel);
         }
@@ -60,20 +67,38 @@ void Terrain::openImage(QString str){
 }
 
 void Terrain::createTerrain(){
-    vertices = new GLfloat*[heightmap.height()];
+    vertices = new GLfloat[terrain_width * terrain_height * 3];
 
     float gap = 0.5f;
-    float posX = -(gap * heightmap.width()/2.f);
+    float posX = -(gap * terrain_width/2.f);
+    float posY = -10.f;
+    float posZ = -(gap * terrain_height/2.f);
+
+    int index = 0;
+    int ind = 0;
+
+    for(int i = 0 ; i < terrain_height ; i++){
+        for(int j = 0 ; j < terrain_width ; j++){
+            vertices[index++] = posX + gap * j;
+            vertices[index++] = posY + hauteur[ind++] / 10.f;
+            vertices[index++] = posZ + gap * i;
+        }
+    }
+
+    /*vertices = new GLfloat*[terrain_height];
+
+    float gap = 0.5f;
+    float posX = -(gap * terrain_width/2.f);
     float posY = -20.f;
-    float posZ = gap * heightmap.height()/2.f;
+    float posZ = gap * terrain_height/2.f;
 
     int indexHeightmap = 0;
 
-    for(int line = 0 ; line < heightmap.height() - 1 ; line++){
+    for(int line = 0 ; line < terrain_height - 1 ; line++){
         int index = 0;
 
-        vertices[line] = new GLfloat[heightmap.width()*2*nbCoord];
-        for(int i = 0 ; i < heightmap.width() ; i++){
+        vertices[line] = new GLfloat[terrain_width*2*nbCoord];
+        for(int i = 0 ; i < terrain_width ; i++){
             for(int j = 0 ; j < 2 ; j++){
                 vertices[line][index++] = posX + gap * i;
                 vertices[line][index++] = posY + hauteur[indexHeightmap++] / 100.f;
@@ -82,20 +107,36 @@ void Terrain::createTerrain(){
         }
 
         posZ -= gap;
-    }
+    }*/
 }
 
 void Terrain::displayTerrain(){
+    int id = 0;
 
+    for(int line = 0 ; line < terrain_height - 1 ; line++){
+        int index = 0;
+        int ind = 0;
 
-    for(int line = 0 ; line < heightmap.height() - 1 ; line++){
-        glVertexAttribPointer(m_posAttr, nbCoord, GL_FLOAT, GL_FALSE, 0, vertices[line]);
+        GLfloat* v = new GLfloat[terrain_width*2*nbCoord];
+        for(int i = 0 ; i < terrain_width ; i++){
+            v[index++] = vertices[id++];
+            v[index++] = vertices[id++];
+            v[index++] = vertices[id++];
+
+            v[index++] = vertices[(line+1) * terrain_width * 3 + ind++];
+            v[index++] = vertices[(line+1) * terrain_width * 3 + ind++];
+            v[index++] = vertices[(line+1) * terrain_width * 3 + ind++];
+        }
+
+        glVertexAttribPointer(m_posAttr, nbCoord, GL_FLOAT, GL_FALSE, 0, v);
 
         glEnableVertexAttribArray(0);
 
-        glDrawArrays(GL_LINE_LOOP, 0, heightmap.width()*2);
+        glDrawArrays(GL_LINE_STRIP, 0, terrain_width*2);
 
         glDisableVertexAttribArray(0);
+
+        delete v;
     }
 }
 
@@ -110,7 +151,7 @@ void Terrain::render()
 
     QMatrix4x4 matrix;
     matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 100.0f);
-    matrix.translate(0, 0, -100);
+    matrix.translate(0, 0, -20);
     matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
 
     m_program->setUniformValue(m_matrixUniform, matrix);

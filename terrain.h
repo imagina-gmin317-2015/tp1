@@ -15,6 +15,7 @@ class Terrain : public OpenGLWindow
 {
 public:
     Terrain(QString str);
+    ~Terrain();
 
     void initialize() Q_DECL_OVERRIDE;
     void render() Q_DECL_OVERRIDE;
@@ -37,8 +38,9 @@ private:
     QImage heightmap;
 
     int* hauteur;
+    int terrain_height, terrain_width;
 
-    GLfloat** vertices;
+    GLfloat* vertices;
 
     static const int nbCoord = 3;
 };

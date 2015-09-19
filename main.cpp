@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     terrain.resize(640, 480);
     terrain.show();
 
-    terrain.setAnimating(false);
+    terrain.setAnimating(true);
 
     return app.exec();
 }
