@@ -5,6 +5,8 @@
 #include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QScreen>
 #include <QString>
+#include <QOpenGLBuffer>
+#include <QVector3D>
 #include <iostream>
 
 #include "openglwindow.h"
@@ -19,6 +21,8 @@ public:
 
     void initialize() Q_DECL_OVERRIDE;
     void render() Q_DECL_OVERRIDE;
+
+    void keyPressEvent( QKeyEvent * event );
 
 private:
     void openImage(QString str);
@@ -35,14 +39,22 @@ private:
     QOpenGLShaderProgram *m_program;
     int m_frame;
 
+    ////////////////////////////////////////////////
+
     QImage heightmap;
 
     int* hauteur;
     int terrain_height, terrain_width;
 
-    GLfloat* vertices;
+    //GLfloat* vertices;
+    QVector3D* vertices;
+    GLushort* indices;
+    QOpenGLBuffer arrayBuf;
+    QOpenGLBuffer indexBuf;
 
     static const int nbCoord = 3;
+
+    float posXCam, posYCam, posZCam; //position camera
 };
 
 #endif // TERRAIN_H

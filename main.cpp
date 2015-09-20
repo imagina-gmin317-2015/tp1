@@ -58,6 +58,7 @@ int main(int argc, char **argv)
     format.setSamples(16);
 
     Terrain terrain("../tp1/heightmap-1.png");
+
     terrain.setFormat(format);
     terrain.resize(640, 480);
     terrain.show();

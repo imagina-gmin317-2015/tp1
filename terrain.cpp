@@ -1,7 +1,6 @@
 #include "terrain.h"
 
-#include <QOpenGLBuffer>
-#include <QVector3D>
+#include <QKeyEvent>
 
 static const char *vertexShaderSource =
         "attribute highp vec4 posAttr;\n"
@@ -19,15 +18,18 @@ static const char *fragmentShaderSource =
         "   gl_FragColor = col;\n"
         "}\n";
 
-Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0)
+Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), posXCam(0), posYCam(0), posZCam(-20)
 {
     openImage(heightmap);
-    createTerrain();
 }
 
 Terrain::~Terrain(){
     delete hauteur;
     delete vertices;
+    delete indices;
+
+    arrayBuf.destroy();
+    indexBuf.destroy();
 }
 
 GLuint Terrain::loadShader(GLenum type, const char *source)
@@ -47,27 +49,40 @@ void Terrain::initialize()
     m_posAttr = m_program->attributeLocation("posAttr");
     m_colAttr = m_program->attributeLocation("colAttr");
     m_matrixUniform = m_program->uniformLocation("matrix");
+
+    arrayBuf.create();
+    indexBuf.create();
+
+    createTerrain();
 }
 
 void Terrain::openImage(QString str){
     heightmap.load(str);
 
-    terrain_width = heightmap.width();
-    terrain_height = heightmap.height();
+    if(heightmap.depth() != 0){
 
-    hauteur = new int[terrain_width * terrain_height];
+        terrain_width = heightmap.width();
+        terrain_height = heightmap.height();
 
-    int index = 0;
-    for(int i = 0  ; i < terrain_height ; i++){
-        for(int j = 0 ; j < terrain_width ; j++){
-            QRgb pixel = heightmap.pixel(i,j);
-            hauteur[index++] = qRed(pixel);
+        hauteur = new int[terrain_width * terrain_height];
+
+        int index = 0;
+        for(int i = 0  ; i < terrain_height ; i++){
+            for(int j = 0 ; j < terrain_width ; j++){
+                QRgb pixel = heightmap.pixel(i,j);
+                hauteur[index++] = qRed(pixel);
+            }
         }
     }
 }
 
 void Terrain::createTerrain(){
-    vertices = new GLfloat[terrain_width * terrain_height * 3];
+
+    if(heightmap.depth() == 0)
+        return;
+
+    //VERTICES /////////////////////////////////////////////////////////////////
+    vertices = new QVector3D[terrain_width * terrain_height];
 
     float gap = 0.5f;
     float posX = -(gap * terrain_width/2.f);
@@ -79,65 +94,51 @@ void Terrain::createTerrain(){
 
     for(int i = 0 ; i < terrain_height ; i++){
         for(int j = 0 ; j < terrain_width ; j++){
-            vertices[index++] = posX + gap * j;
-            vertices[index++] = posY + hauteur[ind++] / 10.f;
-            vertices[index++] = posZ + gap * i;
+            vertices[index++] = QVector3D(posX + gap * j, posY + hauteur[ind++] / 20.f, posZ + gap * i);
         }
     }
 
-    /*vertices = new GLfloat*[terrain_height];
+    // Transfer vertex data to VBO 0
+    arrayBuf.bind();
+    arrayBuf.allocate(vertices, terrain_width * terrain_height * sizeof(QVector3D));
 
-    float gap = 0.5f;
-    float posX = -(gap * terrain_width/2.f);
-    float posY = -20.f;
-    float posZ = gap * terrain_height/2.f;
+    //INDICES /////////////////////////////////////////////////////////////////
+    indices = new GLushort[(terrain_width-1)*(terrain_height-1)*6];
 
-    int indexHeightmap = 0;
+    index = 0;
 
-    for(int line = 0 ; line < terrain_height - 1 ; line++){
-        int index = 0;
+    for(int i = 0 ; i < terrain_height-1 ; i++){
+        for(int j = 0 ; j < terrain_width-1 ; j++){
 
-        vertices[line] = new GLfloat[terrain_width*2*nbCoord];
-        for(int i = 0 ; i < terrain_width ; i++){
-            for(int j = 0 ; j < 2 ; j++){
-                vertices[line][index++] = posX + gap * i;
-                vertices[line][index++] = posY + hauteur[indexHeightmap++] / 100.f;
-                vertices[line][index++] = posZ - gap * j;
-            }
+            indices[index++] = GLushort(i * terrain_width + j);
+            indices[index++] = GLushort((i+1) * terrain_width + j);
+            indices[index++] = GLushort((i+1) * terrain_width + j + 1);
+
+            indices[index++] = GLushort(i * terrain_width + j);
+            indices[index++] = GLushort((i+1) * terrain_width + j + 1);
+            indices[index++] = GLushort(i * terrain_width + j + 1);
         }
+    }
 
-        posZ -= gap;
-    }*/
+    // Transfer index data to VBO 1
+    indexBuf.bind();
+    indexBuf.allocate(indices, (terrain_width-1)*(terrain_height-1)*6 * sizeof(GLushort));
 }
 
 void Terrain::displayTerrain(){
-    int id = 0;
 
-    for(int line = 0 ; line < terrain_height - 1 ; line++){
-        int index = 0;
-        int ind = 0;
+    // Tell OpenGL which VBOs to use
+    arrayBuf.bind();
+    indexBuf.bind();
 
-        GLfloat* v = new GLfloat[terrain_width*2*nbCoord];
-        for(int i = 0 ; i < terrain_width ; i++){
-            v[index++] = vertices[id++];
-            v[index++] = vertices[id++];
-            v[index++] = vertices[id++];
+    // Tell OpenGL programmable pipeline how to locate vertex position data
+    int vertexLocation = m_program->attributeLocation("posAttr");
+    m_program->enableAttributeArray(vertexLocation);
+    m_program->setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 3, sizeof(QVector3D));
 
-            v[index++] = vertices[(line+1) * terrain_width * 3 + ind++];
-            v[index++] = vertices[(line+1) * terrain_width * 3 + ind++];
-            v[index++] = vertices[(line+1) * terrain_width * 3 + ind++];
-        }
+    // Draw cube geometry using indices from VBO 1
+    glDrawElements(GL_TRIANGLES, (terrain_width-1)*(terrain_height-1)*6, GL_UNSIGNED_SHORT, 0);
 
-        glVertexAttribPointer(m_posAttr, nbCoord, GL_FLOAT, GL_FALSE, 0, v);
-
-        glEnableVertexAttribArray(0);
-
-        glDrawArrays(GL_LINE_STRIP, 0, terrain_width*2);
-
-        glDisableVertexAttribArray(0);
-
-        delete v;
-    }
 }
 
 void Terrain::render()
@@ -150,62 +151,36 @@ void Terrain::render()
     m_program->bind();
 
     QMatrix4x4 matrix;
-    matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 100.0f);
-    matrix.translate(0, 0, -20);
+    matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 200.0f);
+    matrix.translate(posXCam, posYCam, posZCam);
     matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
 
     m_program->setUniformValue(m_matrixUniform, matrix);
 
-    displayTerrain();
+    if(heightmap.depth() != 0){
+        displayTerrain();
+    }
 
     m_program->release();
 
     ++m_frame;
 }
 
-/* VBO doesn't work
- * ////////////////////////////////////////////////////////////////
-    QOpenGLBuffer arrayBuf;
-    QOpenGLBuffer indexBuf(QOpenGLBuffer::IndexBuffer);
-
-    arrayBuf.create();
-    indexBuf.create();
-
-    ////////////////////////////////////////////////////////////////
-
-    QVector3D vertices[] = {
-        QVector3D(0.0f, 0.707f,  1.0f),
-        QVector3D(-0.5f, -0.5f,  1.0f),
-        QVector3D(0.5f,  -0.5f,  1.0f)
-    };
-
-    // Transfer vertex data to VBO 0
-    arrayBuf.bind();
-    arrayBuf.allocate(vertices, 4 * sizeof(QVector3D));
-
-    GLushort indices[] = {
-        0, 1, 2
-    };
-
-    // Transfer index data to VBO 1
-    indexBuf.bind();
-    indexBuf.allocate(indices, 3 * sizeof(GLushort));
-
-    ////////////////////////////////////////////////////////////////
-
-    // Tell OpenGL which VBOs to use
-    arrayBuf.bind();
-    indexBuf.bind();
-
-    // Tell OpenGL programmable pipeline how to locate vertex position data
-    int vertexLocation = m_program->attributeLocation("a_position");
-    m_program->enableAttributeArray(vertexLocation);
-    m_program->setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 3, sizeof(QVector3D));
-
-    // Draw cube geometry using indices from VBO 1
-    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);
-
-    ////////////////////////////////////////////////////////////////
- * */
-
+void Terrain::keyPressEvent( QKeyEvent * event )
+{
+    float inc = 0.5f;
+    if(event->key() == Qt::Key_E){
+        posZCam += inc;
+    }else if(event->key() == Qt::Key_D){
+        posZCam -= inc;
+    }else if(event->key() == Qt::Key_S){
+        posXCam += inc;
+    }else if(event->key() == Qt::Key_F){
+        posXCam -= inc;
+    }else if(event->key() == Qt::Key_Up){
+        posYCam -= inc;
+    }else if(event->key() == Qt::Key_Down){
+        posYCam += inc;
+    }
+}
 
