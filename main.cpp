@@ -52,12 +52,12 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-    QGuiApplication app(argc, argv);
+    QGuiApplication* app = new QGuiApplication(argc, argv, Qt::AA_UseDesktopOpenGL);
 
     QSurfaceFormat format;
     format.setSamples(16);
 
-    Terrain terrain("../tp1/heightmap-1.png");
+    Terrain terrain("../tp1/heightmap-1.png", app);
 
     terrain.setFormat(format);
     terrain.resize(640, 480);
@@ -65,6 +65,7 @@ int main(int argc, char **argv)
 
     terrain.setAnimating(true);
 
-    return app.exec();
+    return app->exec();
+
 }
 

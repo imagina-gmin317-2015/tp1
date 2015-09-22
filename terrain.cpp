@@ -26,8 +26,9 @@ struct VertexData
     QVector3D color;
 };
 
-Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), position(0,0,-20), direction_vue_h(3.14f), direction_vue_v(0), wireframe(false)
+Terrain::Terrain(QString heightmap, QGuiApplication* _app) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), position(0,0,-20), direction_vue_h(3.14f), direction_vue_v(0), wireframe(false)
 {
+    app = _app;
     openImage(heightmap);
 }
 
@@ -61,6 +62,24 @@ void Terrain::initialize()
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);							// Active le Z-Buffer
     glDepthFunc(GL_LEQUAL);
+
+    /*
+    GLfloat direction[] = { -1.0f, -1.0f, -1.0f, 0.0f };
+
+    GLfloat Light0Pos[4] = {0.0f, 0.0f, 20.0f, 1.0f};
+
+    GLfloat Light0Amb[4] = {0.4f, 0.4f, 0.4f, 1.0f};
+    GLfloat Light0Dif[4] = {0.7f, 0.7f, 0.7f, 1.0f};
+    GLfloat Light0Spec[4]= {0.1f, 0.1f, 0.1f, 1.0f};
+
+    glLightfv(GL_LIGHT0, GL_POSITION, direction);
+    // Fixe les paramètres de couleur de la lumière 0
+    glLightfv(GL_LIGHT0, GL_AMBIENT, Light0Amb);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, Light0Dif);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, Light0Spec);
+    // Fixe la position de la lumière 0
+    glLightfv(GL_LIGHT0, GL_POSITION, Light0Pos);
+*/
 
     souris_active = false;
 
@@ -188,18 +207,7 @@ void Terrain::render()
 
     QMatrix4x4 matrix;
     matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 200.0f);
-
-
     matrix.lookAt(position, position+direction, up);
-
-    //if(souris_active){
-        //matrix.lookAt(QVector3D(posXCam, posYCam, posZCam), QVector3D(posXCam+(float)cos(direction_vue_h), posYCam+(float)sin(direction_vue_v), posZCam+(float)sin(direction_vue_h)), QVector3D(0,1,0));
-    /*}else{
-        matrix.translate(posXCam, posYCam, posZCam);
-        matrix.rotate(0,1,0,0);
-        matrix.rotate(0,0,1,0);
-        matrix.rotate(0,0,0,1);
-    }*/
 
     m_program->setUniformValue(m_matrixUniform, matrix);
 
@@ -232,12 +240,17 @@ void Terrain::keyPressEvent( QKeyEvent * event )
     if(event->key() == Qt::Key_W){
         wireframe = !wireframe;
     }
+
+    if(event->key() == Qt::Key_Escape){
+        app->quit();
+    }
 }
 
 void Terrain::mousePressEvent( QMouseEvent * event )
 {
     if(event->type() == QEvent::MouseButtonPress){
         if(event->buttons() == Qt::LeftButton){
+            setCursor(Qt::BlankCursor);
             souris_active = true;
         }
     }
@@ -246,6 +259,7 @@ void Terrain::mousePressEvent( QMouseEvent * event )
 void Terrain::mouseReleaseEvent( QMouseEvent * event )
 {
     if(event->type() == QEvent::MouseButtonRelease){
+        setCursor(Qt::BitmapCursor);
         souris_active = false;
     }
 
@@ -286,16 +300,16 @@ void Terrain::mouseMoveEvent(QMouseEvent* event){
         direction_vue_v += mouseSpeed * float( height()/2 - event->y() );
 
         direction = QVector3D(
-            cos(direction_vue_v) * sin(direction_vue_h),
-            sin(direction_vue_v),
-            cos(direction_vue_v) * cos(direction_vue_h)
-        );
+                    cos(direction_vue_v) * sin(direction_vue_h),
+                    sin(direction_vue_v),
+                    cos(direction_vue_v) * cos(direction_vue_h)
+                    );
 
         right = QVector3D(
-            sin(direction_vue_h - 3.14f/2.0f),
-            0,
-            cos(direction_vue_h - 3.14f/2.0f)
-        );
+                    sin(direction_vue_h - 3.14f/2.0f),
+                    0,
+                    cos(direction_vue_h - 3.14f/2.0f)
+                    );
 
         up = QVector3D::crossProduct(right, direction);
 

@@ -9,6 +9,7 @@
 #include <QVector3D>
 #include <QVector2D>
 #include <iostream>
+#include <QGuiApplication>
 
 #include "openglwindow.h"
 
@@ -19,7 +20,7 @@ class VertexData;
 class Terrain : public OpenGLWindow
 {
 public:
-    Terrain(QString str);
+    Terrain(QString str, QGuiApplication*);
     ~Terrain();
 
     void initialize() Q_DECL_OVERRIDE;
@@ -46,6 +47,8 @@ private:
     int m_frame;
 
     ////////////////////////////////////////////////
+
+    QGuiApplication* app;
 
     QImage heightmap;
 
