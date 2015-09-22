@@ -7,11 +7,14 @@
 #include <QString>
 #include <QOpenGLBuffer>
 #include <QVector3D>
+#include <QVector2D>
 #include <iostream>
 
 #include "openglwindow.h"
 
 using namespace std;
+
+class VertexData;
 
 class Terrain : public OpenGLWindow
 {
@@ -49,12 +52,10 @@ private:
     int* hauteur;
     int terrain_height, terrain_width;
 
-    QVector3D* vertices;
+    VertexData* vertices;
     GLushort* indices;
     QOpenGLBuffer arrayBuf;
     QOpenGLBuffer indexBuf;
-
-    static const int nbCoord = 3;
 
     QVector3D position; //position camera
     float direction_vue_h, direction_vue_v; //direction vue caméra
@@ -63,6 +64,8 @@ private:
     QVector3D direction;
     QVector3D right;
     QVector3D up;
+
+    bool wireframe;
 };
 
 #endif // TERRAIN_H

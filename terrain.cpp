@@ -20,7 +20,13 @@ static const char *fragmentShaderSource =
         "   gl_FragColor = col;\n"
         "}\n";
 
-Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), position(0,0,-20), direction_vue_h(3.14f), direction_vue_v(0)
+struct VertexData
+{
+    QVector3D position;
+    QVector3D color;
+};
+
+Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), position(0,0,-20), direction_vue_h(3.14f), direction_vue_v(0), wireframe(false)
 {
     openImage(heightmap);
 }
@@ -51,6 +57,10 @@ void Terrain::initialize()
     m_posAttr = m_program->attributeLocation("posAttr");
     m_colAttr = m_program->attributeLocation("colAttr");
     m_matrixUniform = m_program->uniformLocation("matrix");
+
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);							// Active le Z-Buffer
+    glDepthFunc(GL_LEQUAL);
 
     souris_active = false;
 
@@ -86,7 +96,7 @@ void Terrain::createTerrain(){
         return;
 
     //VERTICES /////////////////////////////////////////////////////////////////
-    vertices = new QVector3D[terrain_width * terrain_height];
+    vertices = new VertexData[terrain_width * terrain_height];
 
     float gap = 0.5f;
     float posX = -(gap * terrain_width/2.f);
@@ -97,14 +107,21 @@ void Terrain::createTerrain(){
 
     for(int i = 0 ; i < terrain_height ; i++){
         for(int j = 0 ; j < terrain_width ; j++){
-            vertices[index] = QVector3D(posX + gap * j, posY + hauteur[index] / 20.f, posZ + gap * i);
+            vertices[index].position = QVector3D(posX + gap * j, posY + hauteur[index] / 20.f, posZ + gap * i);
+            if(hauteur[index] < 85){
+                vertices[index].color = QVector3D(0.f,0.5f,0.f);
+            }else if(hauteur[index] < 170){
+                vertices[index].color = QVector3D(0.33f,0.15f,0.f);
+            }else{
+                vertices[index].color = QVector3D(1.f,1.f,1.f);
+            }
             index++;
         }
     }
 
     // Transfer vertex data to VBO 0
     arrayBuf.bind();
-    arrayBuf.allocate(vertices, terrain_width * terrain_height * sizeof(QVector3D));
+    arrayBuf.allocate(vertices, terrain_width * terrain_height * sizeof(VertexData));
 
     //INDICES /////////////////////////////////////////////////////////////////
     indices = new GLushort[(terrain_width-1)*(terrain_height-1)*6];
@@ -135,13 +152,28 @@ void Terrain::displayTerrain(){
     arrayBuf.bind();
     indexBuf.bind();
 
+    // Offset for position
+    quintptr offset = 0;
+
     // Tell OpenGL programmable pipeline how to locate vertex position data
     int vertexLocation = m_program->attributeLocation("posAttr");
     m_program->enableAttributeArray(vertexLocation);
-    m_program->setAttributeBuffer(vertexLocation, GL_FLOAT, 0, 3, sizeof(QVector3D));
+    m_program->setAttributeBuffer(vertexLocation, GL_FLOAT, offset, 3, sizeof(VertexData));
+
+    offset += sizeof(QVector3D);
+
+    // Tell OpenGL programmable pipeline how to locate vertex position data
+    int colorLocation = m_program->attributeLocation("colAttr");
+    m_program->enableAttributeArray(colorLocation);
+    m_program->setAttributeBuffer(colorLocation, GL_FLOAT, offset, 3, sizeof(VertexData));
 
     // Draw cube geometry using indices from VBO 1
-    glDrawElements(GL_TRIANGLES, (terrain_width-1)*(terrain_height-1)*6, GL_UNSIGNED_SHORT, 0);
+    if(wireframe){
+        glDrawElements(GL_LINES, (terrain_width-1)*(terrain_height-1)*6, GL_UNSIGNED_SHORT, 0);
+    }else{
+        glDrawElements(GL_TRIANGLES, (terrain_width-1)*(terrain_height-1)*6, GL_UNSIGNED_SHORT, 0);
+    }
+
 
 }
 
@@ -150,7 +182,7 @@ void Terrain::render()
     const qreal retinaScale = devicePixelRatio();
     glViewport(0, 0, width() * retinaScale, height() * retinaScale);
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     m_program->bind();
 
@@ -185,16 +217,20 @@ void Terrain::keyPressEvent( QKeyEvent * event )
     float speed = 1.f;
     if(event->key() == Qt::Key_E){
         position += direction * speed;
-    }else if(event->key() == Qt::Key_D){
+    }if(event->key() == Qt::Key_D){
         position -= direction * speed;
-    }else if(event->key() == Qt::Key_S){
+    }if(event->key() == Qt::Key_S){
         position -= right * speed;
-    }else if(event->key() == Qt::Key_F){
+    }if(event->key() == Qt::Key_F){
         position += right * speed;
-    }else if(event->key() == Qt::Key_Up){
+    }if(event->key() == Qt::Key_Up){
         position.setY(position.y() + speed);
-    }else if(event->key() == Qt::Key_Down){
+    }if(event->key() == Qt::Key_Down){
         position.setY(position.y() - speed);
+    }
+
+    if(event->key() == Qt::Key_W){
+        wireframe = !wireframe;
     }
 }
 
