@@ -20,18 +20,29 @@ static const char *fragmentShaderSource =
         "   gl_FragColor = col;\n"
         "}\n";
 
+/**
+ * @brief Structure VertexData représentant un vertices par une position et une couleur.
+ */
 struct VertexData
 {
     QVector3D position;
     QVector3D color;
 };
 
+/**
+ * @brief Terrain::Terrain, constructeur de la classe Terrain, ouvrant l'image passée en paramètre
+ * @param heightmap, chemin de la heightmap permettant de générer le terrain
+ * @param _app, QGuiApplication permettant la fermeture de celle-ci
+ */
 Terrain::Terrain(QString heightmap, QGuiApplication* _app) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), position(0,0,-20), direction_vue_h(3.14f), direction_vue_v(0), wireframe(false)
 {
     app = _app;
     openImage(heightmap);
 }
 
+/**
+ * @brief Terrain::~Terrain, destructeur de la classe Terrain.
+ */
 Terrain::~Terrain(){
     delete hauteur;
     delete vertices;
@@ -49,6 +60,10 @@ GLuint Terrain::loadShader(GLenum type, const char *source)
     return shader;
 }
 
+/**
+ * @brief Terrain::initialize, initialise les données OpenGL et variables/buffers de la classe terrain.
+ * Créé également la structure du terrain.
+ */
 void Terrain::initialize()
 {
     m_program = new QOpenGLShaderProgram(this);
@@ -60,26 +75,8 @@ void Terrain::initialize()
     m_matrixUniform = m_program->uniformLocation("matrix");
 
     glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);							// Active le Z-Buffer
+    glEnable(GL_DEPTH_TEST);    // Active le Z-Buffer
     glDepthFunc(GL_LEQUAL);
-
-    /*
-    GLfloat direction[] = { -1.0f, -1.0f, -1.0f, 0.0f };
-
-    GLfloat Light0Pos[4] = {0.0f, 0.0f, 20.0f, 1.0f};
-
-    GLfloat Light0Amb[4] = {0.4f, 0.4f, 0.4f, 1.0f};
-    GLfloat Light0Dif[4] = {0.7f, 0.7f, 0.7f, 1.0f};
-    GLfloat Light0Spec[4]= {0.1f, 0.1f, 0.1f, 1.0f};
-
-    glLightfv(GL_LIGHT0, GL_POSITION, direction);
-    // Fixe les paramètres de couleur de la lumière 0
-    glLightfv(GL_LIGHT0, GL_AMBIENT, Light0Amb);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, Light0Dif);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, Light0Spec);
-    // Fixe la position de la lumière 0
-    glLightfv(GL_LIGHT0, GL_POSITION, Light0Pos);
-*/
 
     souris_active = false;
 
@@ -89,6 +86,10 @@ void Terrain::initialize()
     createTerrain();
 }
 
+/**
+ * @brief Terrain::openImage, permet d'ouvrir l'image dont le chemin est passé en paramètre et de récupérer la valeur de ces pixels.
+ * @param str, chemin de l'image
+ */
 void Terrain::openImage(QString str){
     heightmap.load(str);
 
@@ -109,6 +110,10 @@ void Terrain::openImage(QString str){
     }
 }
 
+/**
+ * @brief Terrain::createTerrain, créé la structure du terrain en remplissant le tableau de vertices et le tableau d'indices en fonction de la taille de la heightmap.
+ * Alloue également la taille nécessaire dans les buffers correspondant à ceux-ci.
+ */
 void Terrain::createTerrain(){
 
     if(heightmap.depth() == 0)
@@ -165,6 +170,9 @@ void Terrain::createTerrain(){
     indexBuf.allocate(indices, (terrain_width-1)*(terrain_height-1)*6 * sizeof(GLushort));
 }
 
+/**
+ * @brief Terrain::displayTerrain, affiche le terrain avec une structure VBO, en se servant des buffers construit précédemment.
+ */
 void Terrain::displayTerrain(){
 
     // Tell OpenGL which VBOs to use
@@ -181,7 +189,7 @@ void Terrain::displayTerrain(){
 
     offset += sizeof(QVector3D);
 
-    // Tell OpenGL programmable pipeline how to locate vertex position data
+    // Tell OpenGL programmable pipeline how to locate color data
     int colorLocation = m_program->attributeLocation("colAttr");
     m_program->enableAttributeArray(colorLocation);
     m_program->setAttributeBuffer(colorLocation, GL_FLOAT, offset, 3, sizeof(VertexData));
@@ -196,6 +204,9 @@ void Terrain::displayTerrain(){
 
 }
 
+/**
+ * @brief Terrain::render, fonction de rendu OpenGL
+ */
 void Terrain::render()
 {
     const qreal retinaScale = devicePixelRatio();
@@ -220,6 +231,11 @@ void Terrain::render()
     ++m_frame;
 }
 
+/**
+ * @brief Terrain::keyPressEvent, permet d'écouter les entrées clavier et de les traiter.
+ * Peut changer de position la caméra, passer en mode wireframe ou fermer l'application.
+ * @param event, entrées clavier
+ */
 void Terrain::keyPressEvent( QKeyEvent * event )
 {
     float speed = 1.f;
@@ -246,6 +262,12 @@ void Terrain::keyPressEvent( QKeyEvent * event )
     }
 }
 
+/**
+ * @brief Terrain::mousePressEvent, permet d'écouter l'action sur un clique souris
+ * Défini si l'utilisateur a enfoncé le clique gauche.
+ * Désactive le curseur.
+ * @param event, événement de souris
+ */
 void Terrain::mousePressEvent( QMouseEvent * event )
 {
     if(event->type() == QEvent::MouseButtonPress){
@@ -256,6 +278,12 @@ void Terrain::mousePressEvent( QMouseEvent * event )
     }
 }
 
+/**
+ * @brief Terrain::mouseReleaseEvent, permet d'écouter l'action sur un clique souris.
+ * Défini si l'utilisateur a relâché le clique gauche.
+ * Réactive le curseur.
+ * @param event, événement de souris
+ */
 void Terrain::mouseReleaseEvent( QMouseEvent * event )
 {
     if(event->type() == QEvent::MouseButtonRelease){
@@ -265,6 +293,10 @@ void Terrain::mouseReleaseEvent( QMouseEvent * event )
 
 }
 
+/**
+ * @brief Terrain::mouseMoveEvent, permet d'écouter les déplacements de la souris
+ * @param event, événement de souris
+ */
 void Terrain::mouseMoveEvent(QMouseEvent* event){
 
     float mouseSpeed = 0.005f;
@@ -292,9 +324,6 @@ void Terrain::mouseMoveEvent(QMouseEvent* event){
         {
             ym = 0.25f;
         }
-
-        /*direction_vue_h = xm*2.0f*3.14f;
-        direction_vue_v = -ym*2.0f*3.14f;*/
 
         direction_vue_h += mouseSpeed * float(width()/2 - event->x() );
         direction_vue_v += mouseSpeed * float( height()/2 - event->y() );

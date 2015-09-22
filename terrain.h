@@ -48,27 +48,27 @@ private:
 
     ////////////////////////////////////////////////
 
-    QGuiApplication* app;
+    QGuiApplication* app;                       //Application
 
-    QImage heightmap;
+    QImage heightmap;                           //Image de heightmap
 
-    int* hauteur;
-    int terrain_height, terrain_width;
+    int* hauteur;                               //Tableau des hauteurs, correspond aux pixels de l'image
+    int terrain_height, terrain_width;          //Largeur et longueur du terrain
 
-    VertexData* vertices;
-    GLushort* indices;
-    QOpenGLBuffer arrayBuf;
-    QOpenGLBuffer indexBuf;
+    VertexData* vertices;                       //Tableau de vertices
+    GLushort* indices;                          //Tableau d'indices
+    QOpenGLBuffer arrayBuf;                     //Buffer du tableau de vertices
+    QOpenGLBuffer indexBuf;                     //Buffer du tableau d'indices
 
-    QVector3D position; //position camera
-    float direction_vue_h, direction_vue_v; //direction vue caméra
-    bool souris_active; //clique gauche enfoncé ou pas
+    QVector3D position;                         //position camera
+    float direction_vue_h, direction_vue_v;     //direction vue caméra
+    bool souris_active;                         //clique gauche enfoncé ou pas
 
-    QVector3D direction;
-    QVector3D right;
-    QVector3D up;
+    QVector3D direction;                        //vecteur de direction de la caméra
+    QVector3D right;                            //vecteur de direction perpendiculaire de la caméra
+    QVector3D up;                               // vecteur indiquant le haut pour la caméra
 
-    bool wireframe;
+    bool wireframe;                             //Affichage fil de fer ou pas
 };
 
 #endif // TERRAIN_H
