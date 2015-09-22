@@ -1,6 +1,8 @@
 #include "terrain.h"
 
 #include <QKeyEvent>
+#include <QMouseEvent>
+#include <math.h>
 
 static const char *vertexShaderSource =
         "attribute highp vec4 posAttr;\n"
@@ -18,7 +20,7 @@ static const char *fragmentShaderSource =
         "   gl_FragColor = col;\n"
         "}\n";
 
-Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), posXCam(0), posYCam(0), posZCam(-20)
+Terrain::Terrain(QString heightmap) : m_program(0), m_frame(0), indexBuf(QOpenGLBuffer::IndexBuffer), position(0,0,-20), direction_vue_h(3.14f), direction_vue_v(0)
 {
     openImage(heightmap);
 }
@@ -49,6 +51,8 @@ void Terrain::initialize()
     m_posAttr = m_program->attributeLocation("posAttr");
     m_colAttr = m_program->attributeLocation("colAttr");
     m_matrixUniform = m_program->uniformLocation("matrix");
+
+    souris_active = false;
 
     arrayBuf.create();
     indexBuf.create();
@@ -90,11 +94,11 @@ void Terrain::createTerrain(){
     float posZ = -(gap * terrain_height/2.f);
 
     int index = 0;
-    int ind = 0;
 
     for(int i = 0 ; i < terrain_height ; i++){
         for(int j = 0 ; j < terrain_width ; j++){
-            vertices[index++] = QVector3D(posX + gap * j, posY + hauteur[ind++] / 20.f, posZ + gap * i);
+            vertices[index] = QVector3D(posX + gap * j, posY + hauteur[index] / 20.f, posZ + gap * i);
+            index++;
         }
     }
 
@@ -152,8 +156,18 @@ void Terrain::render()
 
     QMatrix4x4 matrix;
     matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 200.0f);
-    matrix.translate(posXCam, posYCam, posZCam);
-    matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
+
+
+    matrix.lookAt(position, position+direction, up);
+
+    //if(souris_active){
+        //matrix.lookAt(QVector3D(posXCam, posYCam, posZCam), QVector3D(posXCam+(float)cos(direction_vue_h), posYCam+(float)sin(direction_vue_v), posZCam+(float)sin(direction_vue_h)), QVector3D(0,1,0));
+    /*}else{
+        matrix.translate(posXCam, posYCam, posZCam);
+        matrix.rotate(0,1,0,0);
+        matrix.rotate(0,0,1,0);
+        matrix.rotate(0,0,0,1);
+    }*/
 
     m_program->setUniformValue(m_matrixUniform, matrix);
 
@@ -168,19 +182,88 @@ void Terrain::render()
 
 void Terrain::keyPressEvent( QKeyEvent * event )
 {
-    float inc = 0.5f;
+    float speed = 1.f;
     if(event->key() == Qt::Key_E){
-        posZCam += inc;
+        position += direction * speed;
     }else if(event->key() == Qt::Key_D){
-        posZCam -= inc;
+        position -= direction * speed;
     }else if(event->key() == Qt::Key_S){
-        posXCam += inc;
+        position -= right * speed;
     }else if(event->key() == Qt::Key_F){
-        posXCam -= inc;
+        position += right * speed;
     }else if(event->key() == Qt::Key_Up){
-        posYCam -= inc;
+        position.setY(position.y() + speed);
     }else if(event->key() == Qt::Key_Down){
-        posYCam += inc;
+        position.setY(position.y() - speed);
+    }
+}
+
+void Terrain::mousePressEvent( QMouseEvent * event )
+{
+    if(event->type() == QEvent::MouseButtonPress){
+        if(event->buttons() == Qt::LeftButton){
+            souris_active = true;
+        }
+    }
+}
+
+void Terrain::mouseReleaseEvent( QMouseEvent * event )
+{
+    if(event->type() == QEvent::MouseButtonRelease){
+        souris_active = false;
+    }
+
+}
+
+void Terrain::mouseMoveEvent(QMouseEvent* event){
+
+    float mouseSpeed = 0.005f;
+
+    if(souris_active && event->type() == QEvent::MouseMove){
+        float xm, ym;
+
+        xm = (float)event->x()/width()  - 0.5f;
+        ym = (float)event->y()/height() - 0.5f;
+
+        if( xm < -0.25f )
+        {
+            xm = 0.25f;
+        }
+        else if( xm > 0.25f )
+        {
+            xm = -0.25f;
+        }
+
+        if( ym < -0.25f )
+        {
+            ym = -0.25f;
+        }
+        else if( ym > 0.25f )
+        {
+            ym = 0.25f;
+        }
+
+        /*direction_vue_h = xm*2.0f*3.14f;
+        direction_vue_v = -ym*2.0f*3.14f;*/
+
+        direction_vue_h += mouseSpeed * float(width()/2 - event->x() );
+        direction_vue_v += mouseSpeed * float( height()/2 - event->y() );
+
+        direction = QVector3D(
+            cos(direction_vue_v) * sin(direction_vue_h),
+            sin(direction_vue_v),
+            cos(direction_vue_v) * cos(direction_vue_h)
+        );
+
+        right = QVector3D(
+            sin(direction_vue_h - 3.14f/2.0f),
+            0,
+            cos(direction_vue_h - 3.14f/2.0f)
+        );
+
+        up = QVector3D::crossProduct(right, direction);
+
+        QCursor::setPos(width()/2 + QWindow::x(), height()/2 + QWindow::y());
     }
 }
 

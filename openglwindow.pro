@@ -11,3 +11,5 @@ INSTALLS += target
 HEADERS += \
     trianglewindow.h \
     terrain.h
+
+QT += opengl

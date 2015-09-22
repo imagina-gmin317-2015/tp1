@@ -23,6 +23,9 @@ public:
     void render() Q_DECL_OVERRIDE;
 
     void keyPressEvent( QKeyEvent * event );
+    void mousePressEvent( QMouseEvent * event );
+    void mouseReleaseEvent( QMouseEvent * event );
+    void mouseMoveEvent(QMouseEvent* event);
 
 private:
     void openImage(QString str);
@@ -46,7 +49,6 @@ private:
     int* hauteur;
     int terrain_height, terrain_width;
 
-    //GLfloat* vertices;
     QVector3D* vertices;
     GLushort* indices;
     QOpenGLBuffer arrayBuf;
@@ -54,7 +56,13 @@ private:
 
     static const int nbCoord = 3;
 
-    float posXCam, posYCam, posZCam; //position camera
+    QVector3D position; //position camera
+    float direction_vue_h, direction_vue_v; //direction vue caméra
+    bool souris_active; //clique gauche enfoncé ou pas
+
+    QVector3D direction;
+    QVector3D right;
+    QVector3D up;
 };
 
 #endif // TERRAIN_H
