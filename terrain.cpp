@@ -1,3 +1,7 @@
+/**
+ *  @Author David Lonni
+ */
+
 #include "terrain.h"
 
 #include <QKeyEvent>
@@ -30,7 +34,7 @@ struct VertexData
 };
 
 /**
- * @brief Terrain::Terrain, constructeur de la classe Terrain, ouvrant l'image passée en paramètre
+ * @brief Terrain::Terrain, constructeur de la classe Terrain, ouvrant l'image passée en paramètre.
  * @param heightmap, chemin de la heightmap permettant de générer le terrain
  * @param _app, QGuiApplication permettant la fermeture de celle-ci
  */
@@ -77,6 +81,34 @@ void Terrain::initialize()
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);    // Active le Z-Buffer
     glDepthFunc(GL_LEQUAL);
+	
+	/* Undefined reference to ... glLightfv and glFogf
+	 *
+	GLfloat direction[] = { -1.0f, -1.0f, -1.0f, 0.0f };
+
+	GLfloat Light0Pos[4] = {0.0f, 0.0f, 20.0f, 1.0f};
+
+	GLfloat Light0Amb[4] = {0.4f, 0.4f, 0.4f, 1.0f};
+	GLfloat Light0Dif[4] = {0.7f, 0.7f, 0.7f, 1.0f};
+	GLfloat Light0Spec[4]= {0.1f, 0.1f, 0.1f, 1.0f};
+
+	glLightfv(GL_LIGHT0, GL_POSITION, direction);
+	// Fixe les paramètres de couleur de la lumière 0
+	glLightfv(GL_LIGHT0, GL_AMBIENT, Light0Amb);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, Light0Dif);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, Light0Spec);
+	// Fixe la position de la lumière 0
+	glLightfv(GL_LIGHT0, GL_POSITION, Light0Pos);
+	
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+
+	//////////////////////////////////////////////////////////////////////
+	GLfloat fogColor[4] = { 0.3f, 0.3f, 0.3f, 0.0f };
+	glFogf(GL_FOG_DENSITY, 0.02f);
+
+	glFogfv(GL_FOG_COLOR, fogColor);
+	glEnable(GL_FOG);*/
 
     souris_active = false;
 
@@ -168,6 +200,8 @@ void Terrain::createTerrain(){
     // Transfer index data to VBO 1
     indexBuf.bind();
     indexBuf.allocate(indices, (terrain_width-1)*(terrain_height-1)*6 * sizeof(GLushort));
+
+    delete hauteur;
 }
 
 /**
@@ -205,7 +239,7 @@ void Terrain::displayTerrain(){
 }
 
 /**
- * @brief Terrain::render, fonction de rendu OpenGL
+ * @brief Terrain::render, fonction de rendu OpenGL.
  */
 void Terrain::render()
 {
@@ -233,7 +267,7 @@ void Terrain::render()
 
 /**
  * @brief Terrain::keyPressEvent, permet d'écouter les entrées clavier et de les traiter.
- * Peut changer de position la caméra, passer en mode wireframe ou fermer l'application.
+ * Peut changer la position de la caméra, passer en mode wireframe ou fermer l'application.
  * @param event, entrées clavier
  */
 void Terrain::keyPressEvent( QKeyEvent * event )
@@ -263,8 +297,8 @@ void Terrain::keyPressEvent( QKeyEvent * event )
 }
 
 /**
- * @brief Terrain::mousePressEvent, permet d'écouter l'action sur un clique souris
- * Défini si l'utilisateur a enfoncé le clique gauche.
+ * @brief Terrain::mousePressEvent, permet d'écouter l'action sur un clic souris.
+ * Défini si l'utilisateur a enfoncé le clic gauche.
  * Désactive le curseur.
  * @param event, événement de souris
  */
@@ -279,8 +313,8 @@ void Terrain::mousePressEvent( QMouseEvent * event )
 }
 
 /**
- * @brief Terrain::mouseReleaseEvent, permet d'écouter l'action sur un clique souris.
- * Défini si l'utilisateur a relâché le clique gauche.
+ * @brief Terrain::mouseReleaseEvent, permet d'écouter l'action sur un clic souris.
+ * Défini si l'utilisateur a relâché le clic gauche.
  * Réactive le curseur.
  * @param event, événement de souris
  */

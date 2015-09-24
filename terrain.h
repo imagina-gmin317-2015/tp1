@@ -1,3 +1,7 @@
+/**
+ *  @Author David Lonni
+ */
+
 #ifndef TERRAIN_H
 #define TERRAIN_H
 
@@ -61,12 +65,12 @@ private:
     QOpenGLBuffer indexBuf;                     //Buffer du tableau d'indices
 
     QVector3D position;                         //position camera
-    float direction_vue_h, direction_vue_v;     //direction vue caméra
+    float direction_vue_h, direction_vue_v;     //angle vue caméra
     bool souris_active;                         //clique gauche enfoncé ou pas
 
-    QVector3D direction;                        //vecteur de direction de la caméra
-    QVector3D right;                            //vecteur de direction perpendiculaire de la caméra
-    QVector3D up;                               // vecteur indiquant le haut pour la caméra
+    QVector3D direction;                        //vecteur direction de la caméra
+    QVector3D right;                            //vecteur right perpendiculaire au vecteur direction de la caméra
+    QVector3D up;                               //vecteur indiquant le haut pour la caméra
 
     bool wireframe;                             //Affichage fil de fer ou pas
 };
