@@ -106,9 +106,7 @@ bool OpenGLWindow::event(QEvent *event)
         renderNow();
         return true;
     default:
-    std::cout << event->type() << std::endl;
-
-        return QWindow::event(event);
+    return QWindow::event(event);
     }
 }
 

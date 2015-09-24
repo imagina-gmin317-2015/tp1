@@ -41,6 +41,8 @@
 #include <QtGui/QWindow>
 #include <QtGui/QOpenGLFunctions>
 
+#ifndef OPENGLWINDOW_H_DEFINED
+#define OPENGLWINDOW_H_DEFINED
 QT_BEGIN_NAMESPACE
 class QPainter;
 class QOpenGLContext;
@@ -79,4 +81,4 @@ private:
     QOpenGLPaintDevice *m_device;
 };
 //! [1]
-
+#endif
