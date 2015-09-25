@@ -37,7 +37,6 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
-
 #include "openglwindow.h"
 
 #include <QtGui/QGuiApplication>
@@ -87,7 +86,7 @@ int main(int argc, char **argv)
     window.resize(640, 480);
     window.show();
 
-    window.setAnimating(true);
+    window.setAnimating(false);
 
     return app.exec();
 }
@@ -136,6 +135,7 @@ void TriangleWindow::initialize()
 //! [5]
 void TriangleWindow::render()
 {
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     const qreal retinaScale = devicePixelRatio();
     glViewport(0, 0, width() * retinaScale, height() * retinaScale);
 
@@ -145,22 +145,68 @@ void TriangleWindow::render()
 
     QMatrix4x4 matrix;
     matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 100.0f);
-    matrix.translate(0, 0, -2);
+    matrix.translate(0, 0, -10);
     matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
 
     m_program->setUniformValue(m_matrixUniform, matrix);
 
-    GLfloat vertices[] = {
-        0.0f, 0.707f,
+   /* GLfloat vertices[] = {
         -0.5f, -0.5f,
-        0.5f, -0.5f
+        0.0f, 0.707f,
+        0.5f, -0.5f,
+        1, 0.707f,
+        1.5f , -0.5f,
+        2,0.707f
     };
 
+
+
+    GLfloat vertices[] = {
+        0,0,0,1,1,0,0,1,1,0,1,1,1,0,1,1,2,0,1,1,2,0,2,1,2,0,2,1,3,0,2,1,3,0,3,1,3,0,3,1,4,0,3,1,4,0,4,1,0,1,0,2,1,1,0,2,1,1,1,2,1,1,1,2,2,1,1,2,2,1,2,2,2,1,2,2,3,1,2,2,3,1,3,2,3,1,3,2,4,1,3,2,4,1,4,2,0,1,0,2,1,1,0,2,1,1,1,2,1,1,1,2,2,1,1,2,2,1,2,2,2,1,2,2,3,1,2,2,3,1,3,2,3,1,3,2,4,1,3,2,4,1,4,2,0,1,0,2,1,1,0,2,1,1,1,2,1,1,1,2,2,1,1,2,2,1,2,2,2,1,2,2,3,1,2,2,3,1,3,2,3,1,3,2,4,1,3,2,4,1,4,2
+
+        };
+*/
+    int nRow = 4, nCol=4;
+    static const int motif[] = {0,0,0,1,1,0,0,1,1,0,1,1};
+
+    std::vector<float> line;
+    int lengthMotif = (sizeof(motif)/sizeof(*motif)); // taille du tableau
+
+        // Duplication horizontal
+        for (int i=0;i< nCol;i++) {
+            for (int k=0;k<lengthMotif;k++){
+                // On agit moralement sur les coordonnées le long de l'axe x, le premier axe (sur deux)
+                if (k % 2 == 0) line.push_back(motif[k]+i); else line.push_back(motif[k]);
+            }
+        }
+
+        // Duplication vertical
+        std::vector<float> verticesVec;
+           for (int i=0;i< nRow;i++) {
+            for (int k=0;k< (int) line.size();k++){
+                // On agit moralement sur les coordonnées le long de l'axe y, le deuxième axe (sur deux)
+                if (k % 2 == 1) verticesVec.push_back(line.at(k)+i); else verticesVec.push_back(line.at(k));
+            }
+        }
+
+    GLfloat* vertices = &verticesVec[0];
+
+    /*
     GLfloat colors[] = {
         1.0f, 0.0f, 1.0f,
         1.0f, 1.0f, 0.0f,
         0.0f, 1.0f, 1.0f
     };
+    */
+
+    int a =3*verticesVec.size()/2;
+    GLfloat colors[a] ={1.0f};
+
+    for (int i=0;i<3*lengthMotif*nRow*nCol*0.5;i++){
+        colors[i]=1.0f;
+    }
+
+
 
     glVertexAttribPointer(m_posAttr, 2, GL_FLOAT, GL_FALSE, 0, vertices);
     glVertexAttribPointer(m_colAttr, 3, GL_FLOAT, GL_FALSE, 0, colors);
@@ -168,7 +214,9 @@ void TriangleWindow::render()
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+    glDrawArrays(GL_TRIANGLES, 0, 16*6); // Le motif fait 6 points, et il est répété 4*4 fois
 
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
@@ -178,3 +226,6 @@ void TriangleWindow::render()
     ++m_frame;
 }
 //! [5]
+
+
+
