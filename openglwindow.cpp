@@ -127,6 +127,13 @@ void OpenGLWindow::renderNow()
     if (!m_context) {
         m_context = new QOpenGLContext(this);
         m_context->setFormat(requestedFormat());
+
+        /*QSurfaceFormat format = requestedFormat();
+        format.setRenderableType(QSurfaceFormat::OpenGL);
+        format.setVersion(3,0);
+        format.setProfile(QSurfaceFormat::CoreProfile);
+        m_context->setFormat(format);*/
+
         m_context->create();
 
         needsInitialize = true;
