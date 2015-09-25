@@ -81,34 +81,35 @@ void Terrain::initialize()
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);    // Active le Z-Buffer
     glDepthFunc(GL_LEQUAL);
-	
-	/* Undefined reference to ... glLightfv and glFogf
-	 *
-	GLfloat direction[] = { -1.0f, -1.0f, -1.0f, 0.0f };
 
-	GLfloat Light0Pos[4] = {0.0f, 0.0f, 20.0f, 1.0f};
+    glShadeModel(GL_SMOOTH);
 
-	GLfloat Light0Amb[4] = {0.4f, 0.4f, 0.4f, 1.0f};
-	GLfloat Light0Dif[4] = {0.7f, 0.7f, 0.7f, 1.0f};
-	GLfloat Light0Spec[4]= {0.1f, 0.1f, 0.1f, 1.0f};
+    GLfloat direction[] = { -1.0f, -1.0f, -1.0f, 0.0f };
 
-	glLightfv(GL_LIGHT0, GL_POSITION, direction);
-	// Fixe les paramètres de couleur de la lumière 0
-	glLightfv(GL_LIGHT0, GL_AMBIENT, Light0Amb);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, Light0Dif);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, Light0Spec);
-	// Fixe la position de la lumière 0
-	glLightfv(GL_LIGHT0, GL_POSITION, Light0Pos);
-	
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
+    GLfloat Light0Pos[4] = {0.0f, 0.0f, 20.0f, 1.0f};
 
-	//////////////////////////////////////////////////////////////////////
-	GLfloat fogColor[4] = { 0.3f, 0.3f, 0.3f, 0.0f };
-	glFogf(GL_FOG_DENSITY, 0.02f);
+    GLfloat Light0Amb[4] = {0.4f, 0.4f, 0.4f, 1.0f};
+    GLfloat Light0Dif[4] = {0.7f, 0.7f, 0.7f, 1.0f};
+    GLfloat Light0Spec[4]= {0.1f, 0.1f, 0.1f, 1.0f};
 
-	glFogfv(GL_FOG_COLOR, fogColor);
-	glEnable(GL_FOG);*/
+    glLightfv(GL_LIGHT0, GL_POSITION, direction);
+    // Fixe les paramètres de couleur de la lumière 0
+    glLightfv(GL_LIGHT0, GL_AMBIENT, Light0Amb);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, Light0Dif);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, Light0Spec);
+    // Fixe la position de la lumière 0
+    glLightfv(GL_LIGHT0, GL_POSITION, Light0Pos);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    //////////////////////////////////////////////////////////////////////
+    GLfloat fogColor[4] = { 0.3f, 0.3f, 0.3f, 0.0f };
+    glEnable(GL_FOG);
+    glFogfv(GL_FOG_COLOR,fogColor);
+    glFogi(GL_FOG_MODE, GL_LINEAR);
+    glFogf(GL_FOG_START, 10.f);
+    glFogf(GL_FOG_END, 40.f);
 
     souris_active = false;
 
@@ -229,12 +230,7 @@ void Terrain::displayTerrain(){
     m_program->setAttributeBuffer(colorLocation, GL_FLOAT, offset, 3, sizeof(VertexData));
 
     // Draw cube geometry using indices from VBO 1
-    if(wireframe){
-        glDrawElements(GL_LINES, (terrain_width-1)*(terrain_height-1)*6, GL_UNSIGNED_SHORT, 0);
-    }else{
-        glDrawElements(GL_TRIANGLES, (terrain_width-1)*(terrain_height-1)*6, GL_UNSIGNED_SHORT, 0);
-    }
-
+    glDrawElements(GL_TRIANGLES, (terrain_width-1)*(terrain_height-1)*6, GL_UNSIGNED_SHORT, 0);
 
 }
 
@@ -289,6 +285,11 @@ void Terrain::keyPressEvent( QKeyEvent * event )
 
     if(event->key() == Qt::Key_W){
         wireframe = !wireframe;
+        if(wireframe){
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }else{
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
     }
 
     if(event->key() == Qt::Key_Escape){
