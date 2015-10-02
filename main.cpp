@@ -39,11 +39,12 @@
 ****************************************************************************/
 #include "openglwindow.h"
 
+
 #include <QtGui/QGuiApplication>
 #include <QtGui/QMatrix4x4>
 #include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QScreen>
-
+#include <QtDebug>
 #include <QtCore/qmath.h>
 
 //! [1]
@@ -77,7 +78,7 @@ TriangleWindow::TriangleWindow()
 int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
-
+    qDebug() << "Ca marche !";
     QSurfaceFormat format;
     format.setSamples(16);
 
@@ -167,6 +168,8 @@ void TriangleWindow::render()
         };
 */
     int nRow = 4, nCol=4;
+
+
     static const int motif[] = {0,0,0,1,1,0,0,1,1,0,1,1};
 
     std::vector<float> line;
@@ -191,13 +194,7 @@ void TriangleWindow::render()
 
     GLfloat* vertices = &verticesVec[0];
 
-    /*
-    GLfloat colors[] = {
-        1.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 1.0f
-    };
-    */
+
 
     int a =3*verticesVec.size()/2;
     GLfloat colors[a] ={1.0f};

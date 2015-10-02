@@ -6,7 +6,7 @@ Pour le moment, je n'ai pu faire qu'une partie de la première application, il m
 J'ai donc :
 	- créer une grille qui représente un grand carré (vertices)
 	- créer le tableau des couleurs des vertex correspondant (colors, très simpliste)
-	- activer le mode "grille" des polygones
+	- activer le mode "grille"
 
 Pour la suite, je compte lire cette page, pour la gestion indexé des vertexs :
 http://www.songho.ca/opengl/gl_vertexarray.html
