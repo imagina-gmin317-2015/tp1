@@ -43,9 +43,17 @@
 #include <QtGui/QGuiApplication>
 #include <QtGui/QMatrix4x4>
 #include <QtGui/QOpenGLShaderProgram>
+#include <QtGui/QOpenGLBuffer>
 #include <QtGui/QScreen>
 
 #include <QtCore/qmath.h>
+
+#include <iostream>
+using namespace std;
+
+
+
+
 
 //! [1]
 class TriangleWindow : public OpenGLWindow
@@ -53,8 +61,10 @@ class TriangleWindow : public OpenGLWindow
 public:
     TriangleWindow();
 
+    void drawTerrain();
     void initialize() Q_DECL_OVERRIDE;
     void render() Q_DECL_OVERRIDE;
+    void createBuffer();
 
 private:
     GLuint loadShader(GLenum type, const char *source);
@@ -64,15 +74,30 @@ private:
     GLuint m_matrixUniform;
 
     QOpenGLShaderProgram *m_program;
+
+    QOpenGLBuffer arrayBuf;
+    QOpenGLBuffer indexBuf;
+
     int m_frame;
 };
+
+struct VertexData
+{
+    QVector3D position;
+    QVector2D texCoord;
+};
+
 
 TriangleWindow::TriangleWindow()
     : m_program(0)
     , m_frame(0)
 {
+
 }
 //! [1]
+
+
+
 
 //! [2]
 int main(int argc, char **argv)
@@ -83,11 +108,14 @@ int main(int argc, char **argv)
     format.setSamples(16);
 
     TriangleWindow window;
+
+
     window.setFormat(format);
     window.resize(640, 480);
+
     window.show();
 
-    window.setAnimating(true);
+    window.setAnimating(false);
 
     return app.exec();
 }
@@ -96,20 +124,20 @@ int main(int argc, char **argv)
 
 //! [3]
 static const char *vertexShaderSource =
-    "attribute highp vec4 posAttr;\n"
-    "attribute lowp vec4 colAttr;\n"
-    "varying lowp vec4 col;\n"
-    "uniform highp mat4 matrix;\n"
-    "void main() {\n"
-    "   col = colAttr;\n"
-    "   gl_Position = matrix * posAttr;\n"
-    "}\n";
+        "attribute highp vec4 posAttr;\n"
+        "attribute lowp vec4 colAttr;\n"
+        "varying lowp vec4 col;\n"
+        "uniform highp mat4 matrix;\n"
+        "void main() {\n"
+        "   col = colAttr;\n"
+        "   gl_Position = matrix * posAttr;\n"
+        "}\n";
 
 static const char *fragmentShaderSource =
-    "varying lowp vec4 col;\n"
-    "void main() {\n"
-    "   gl_FragColor = col;\n"
-    "}\n";
+        "varying lowp vec4 col;\n"
+        "void main() {\n"
+        "   gl_FragColor = col;\n"
+        "}\n";
 //! [3]
 
 //! [4]
@@ -120,7 +148,6 @@ GLuint TriangleWindow::loadShader(GLenum type, const char *source)
     glCompileShader(shader);
     return shader;
 }
-
 void TriangleWindow::initialize()
 {
     m_program = new QOpenGLShaderProgram(this);
@@ -130,31 +157,114 @@ void TriangleWindow::initialize()
     m_posAttr = m_program->attributeLocation("posAttr");
     m_colAttr = m_program->attributeLocation("colAttr");
     m_matrixUniform = m_program->uniformLocation("matrix");
+
+
+
+
+
+
+
+
+   /*
+    arrayBuf.create();
+    indexBuf.create();
+   VertexData vertices [] =
+           {{QVector3D(-1.0f, -1.0f,  1.0f), QVector2D(0.0f, 0.0f)},  // v0
+            {QVector3D( 1.0f, -1.0f,  1.0f), QVector2D(0.33f, 0.0f)}, // v1
+            {QVector3D(-1.0f,  1.0f,  1.0f), QVector2D(0.0f, 0.5f)}} ; // v2
+
+
+    GLushort indexes[] = {
+        0,1,2
+    };
+
+    arrayBuf.bind();
+    arrayBuf.allocate((vertices, 3*sizeof(VertexData)));
+
+    indexBuf.bind();
+    indexBuf.allocate((indexes, 3*sizeof(GLushort)));
+
+
+     //arrayBuf.allocate((vertices, 16*16*3*sizeof(float) ));
+        //indexBuf.allocate((indexes, (16-1)*(16-1)*2*3*sizeof(unsigned int) ));*/
+
 }
 //! [4]
 
-//! [5]
-void TriangleWindow::render()
+
+
+void TriangleWindow::drawTerrain()
 {
-    const qreal retinaScale = devicePixelRatio();
-    glViewport(0, 0, width() * retinaScale, height() * retinaScale);
 
-    glClear(GL_COLOR_BUFFER_BIT);
 
-    m_program->bind();
 
-    QMatrix4x4 matrix;
-    matrix.perspective(60.0f, 16.0f/9.0f, 0.1f, 100.0f);
-    matrix.translate(0, 0, -2);
-    matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
+    GLfloat vertices[16*16];
 
-    m_program->setUniformValue(m_matrixUniform, matrix);
+    int cptPoint = 0;
+    for(int i = 0 ; i<16 ; i++)
+    {
+        for(int j = 0 ; j<16 ; j++)
+        {
+            //vertices[cptPoint++] = QVector3D((float)i/20.0f,(float)j/20.0f,0.0f);
+            vertices[cptPoint++] = (float)i;
+            vertices[cptPoint++] = (float)j;
+            vertices[cptPoint++] = 0.0f;
 
-    GLfloat vertices[] = {
-        0.0f, 0.707f,
-        -0.5f, -0.5f,
-        0.5f, -0.5f
-    };
+        }
+    }
+
+
+    unsigned int indexes[(16-1)*(16-1)*2*3];
+    int cptIndex = 0;
+    for(int i = 0 ; i<16-1 ; i++)
+    {
+        for(int j = 0 ; j<16-1 ; j++)
+        {
+            indexes[cptIndex++] = i*16 + j;
+            indexes[cptIndex++] = (i+1) * 16 + j;
+            indexes[cptIndex++] = (i+1) * 16 + j+1;
+
+            cout<<"Triangle "<<j+(i*16)<<" ; "<<j+(i*16) +1<<" ; "<<j+1+(i+1)*16<<endl;
+
+            indexes[cptIndex++] = i*16 + j;
+            indexes[cptIndex++] = (i+1) * 16 + j+1;
+            indexes[cptIndex++] = i*16 + j+1;
+
+            cout<<"Triangle "<<j+(i*16)<<" ; "<<j+(i+1)*16<<" ; "<<j+(i*16) +1<<endl;
+
+        }
+    }
+
+    float triangles[(16-1)*(16-1)*2*3*3];
+    cptIndex = 0;
+    int cptTriangles = 0;
+    for(int i = 0; i<=(16-1)*(16-1)*2 ; i+=3)
+    {
+        triangles[cptTriangles++] = vertices[indexes[i]*3];
+        triangles[cptTriangles++] = vertices[indexes[i]*3 + 1];
+        triangles[cptTriangles++] = vertices[indexes[i]*3 + 2];
+
+        triangles[cptTriangles++] = vertices[indexes[i+1]*3];
+        triangles[cptTriangles++] = vertices[indexes[i+1]*3 + 1];
+        triangles[cptTriangles++] = vertices[indexes[i+1]*3 + 2];
+
+        triangles[cptTriangles++] = vertices[indexes[i+2]*3];
+        triangles[cptTriangles++] = vertices[indexes[i+2]*3 + 1];
+        triangles[cptTriangles++] = vertices[indexes[i+2]*3 + 2];
+
+
+        cout<< vertices[indexes[i]*3] << " ; " << vertices[indexes[i]*3 + 1] << " ; "<< vertices[indexes[i]*3 + 2]<< endl;
+        cout<< vertices[indexes[i+1]*3] << " ; " << vertices[indexes[i+1]*3 + 1] << " ; "<< vertices[indexes[i+1]*3 + 2]<< endl;
+        cout<< vertices[indexes[i+2]*3] << " ; " << vertices[indexes[i+2]*3 + 1] << " ; "<< vertices[indexes[i+2]*3 + 2]<< endl;
+        cout<< i<<endl;
+
+
+    }
+
+
+
+
+    cout<<"ok"<<endl;
 
     GLfloat colors[] = {
         1.0f, 0.0f, 1.0f,
@@ -162,19 +272,70 @@ void TriangleWindow::render()
         0.0f, 1.0f, 1.0f
     };
 
-    glVertexAttribPointer(m_posAttr, 2, GL_FLOAT, GL_FALSE, 0, vertices);
+
+    glVertexAttribPointer(m_posAttr, 3, GL_FLOAT, GL_FALSE, 0, triangles);
     glVertexAttribPointer(m_colAttr, 3, GL_FLOAT, GL_FALSE, 0, colors);
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, (16-1)*(16-1)*2*3);
 
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(0);
 
-    m_program->release();
+    /*arrayBuf.bind();
+    indexBuf.bind();
 
-    ++m_frame;
+    // Offset for position
+    quintptr offset = 0;
+
+    // Tell OpenGL programmable pipeline how to locate vertex position data
+    int vertexLocation = m_program->attributeLocation("a_position");
+    m_program->enableAttributeArray(vertexLocation);
+    m_program->setAttributeBuffer(vertexLocation, GL_FLOAT, offset, 3, sizeof(VertexData));
+
+    // Offset for texture coordinate
+    offset += sizeof(QVector3D);
+
+    // Tell OpenGL programmable pipeline how to locate vertex texture coordinate data
+    int texcoordLocation = m_program->attributeLocation("a_texcoord");
+    m_program->enableAttributeArray(texcoordLocation);
+    m_program->setAttributeBuffer(texcoordLocation, GL_FLOAT, offset, 2, sizeof(VertexData));
+
+    cout<<"Drawing..."<<endl;
+
+    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, 0);*/
+
 }
+
+
 //! [5]
+void TriangleWindow::render()
+{
+    const qreal retinaScale = devicePixelRatio();
+    glViewport(0, 0, width() * retinaScale, height() * retinaScale);
+
+    // Clear color and depth buffer
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    m_program->bind();
+
+    QMatrix4x4 matrix;
+    matrix.translate(0, 0, -2);
+    matrix.rotate(100.0f * m_frame / screen()->refreshRate(), 0, 1, 0);
+
+    m_program->setUniformValue(m_matrixUniform, matrix);
+
+
+    drawTerrain();
+
+
+
+}
+
+
+
+
+
+
